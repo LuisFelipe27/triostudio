@@ -1,0 +1,29 @@
+{% extends "two_factor/_base.html" %}
+{% load i18n two_factor %}
+
+{% block content %}
+  <h1 style="color: #4d648d;">{% block title %}{% trans "Autenticación de Doble Factor" %}{% endblock %}</h1>
+
+    {% if default_device %}
+        {% if default_device_type == 'TwoFactorDevice' %}
+            <p>{% trans "El código de verificación será enviado a su correo electrónico: " %} <strong>{{ user.email }}</strong></p>
+            <p>{% trans "Además, el código de verificación puede ser generado por su app generadora de tokens." %}</p>
+        {% elif default_device_type == 'TOTPDevice' %}
+            <p>{% trans "El código de verificación será generado por su app generadora de tokens." %}</p>
+        {% endif %}
+
+        <p style="font-size: 0.9em;">{% trans "Recomendación: Google Authenticator." %}</p>
+        <h3 style="color: #4d648d;">{% trans "Habilitar Google Authenticator" %}</h3>
+        <p>
+            <img src="{% url 'two_factor:qr-code' %}" alt="QR Code">
+        </p>
+
+        <p>
+            <a class="btn btn-secondary" href="#" onclick="window.close();" style="background-color: #4d648d; border-color: #4d648d;">
+                {% trans "CERRAR" %}
+            </a>
+        </p>
+    {% else %}
+        <p>{% trans "La Autenticación de Doble Factor está deshabilitada." %}</p>
+    {% endif %}
+{% endblock %}

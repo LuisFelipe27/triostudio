@@ -1,0 +1,40 @@
+{% load i18n %}
+{% if job.status == 'done' %}
+    <div class="ts-status ts-status--ok">
+        ✓ Vista previa actualizada
+    </div>
+    {# Refresh the preview image cache-busted, swap inline. #}
+    <script>
+    (function () {
+        var img = document.getElementById('ts-preview-img');
+        var url = '{{ job.preview.url }}?v={{ job.modified|date:"U" }}';
+        if (img) {
+            img.src = url;
+        } else {
+            var pane = document.getElementById('ts-preview-pane');
+            if (pane) {
+                var empty = pane.querySelector('.ts-empty');
+                if (empty) empty.remove();
+                var tag = pane.querySelector('.ts-canvas-tag');
+                var im = document.createElement('img');
+                im.id = 'ts-preview-img';
+                im.alt = 'halftone preview';
+                im.src = url;
+                pane.appendChild(im);
+            }
+        }
+    })();
+    </script>
+{% elif job.status == 'error' %}
+    <div class="ts-status ts-status--err">
+        ✗ Error: {{ job.error_message }}
+    </div>
+{% else %}
+    <div class="ts-status ts-status--busy"
+         hx-get="{% url 'halftone:job_status' job.pk %}?mode=preview"
+         hx-trigger="load delay:900ms"
+         hx-target="#ts-status"
+         hx-swap="innerHTML">
+        <span class="ts-spinner"></span> Generando halftone…
+    </div>
+{% endif %}

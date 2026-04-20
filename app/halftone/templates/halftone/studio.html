@@ -1,0 +1,125 @@
+{% load static %}<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TrioStudio - Halftone DTF</title>
+    <link rel="stylesheet" href="{% static 'halftone/css/studio.css' %}">
+    <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
+</head>
+<body>
+    <header class="ts-topbar">
+        <div class="ts-brand">
+            <span class="ts-logo">◐</span>
+            <div>
+                <strong>TrioStudio</strong>
+                <small>Halftone DTF Converter</small>
+            </div>
+        </div>
+        <nav class="ts-topnav">
+            <span class="ts-chip">Beta</span>
+        </nav>
+    </header>
+
+    <main class="ts-shell">
+        <!-- ================= CANVAS ================= -->
+        <section class="ts-canvas-wrap">
+            <div id="ts-canvas" class="ts-canvas">
+                <form id="ts-upload-form"
+                      hx-post="{% url 'halftone:upload' %}"
+                      hx-encoding="multipart/form-data"
+                      hx-target="#ts-canvas"
+                      hx-swap="innerHTML"
+                      hx-indicator="#ts-upload-spinner">
+                    {% csrf_token %}
+                    <label class="ts-dropzone" for="id_original">
+                        <span class="ts-dz-icon">⤴</span>
+                        <span class="ts-dz-title">Arrastra una imagen o haz clic</span>
+                        <span class="ts-dz-hint">PNG con transparencia recomendado · máx. 20&nbsp;MB</span>
+                        {{ upload_form.original }}
+                        <span id="ts-upload-spinner" class="ts-spinner htmx-indicator"></span>
+                    </label>
+                </form>
+            </div>
+        </section>
+
+        <!-- ================= SIDEBAR ================= -->
+        <aside class="ts-sidebar">
+            <button type="button" class="ts-reset-btn" onclick="window.location.reload()">
+                ↺ RESET
+            </button>
+
+            <form id="ts-params-form"
+                  hx-trigger="change delay:250ms, input changed delay:300ms from:input[type=range]"
+                  hx-target="#ts-status"
+                  hx-swap="innerHTML">
+                {% csrf_token %}
+
+                {% include 'halftone/_sidebar_fields.html' with form=form %}
+
+                <div id="ts-status" class="ts-status ts-status--idle">
+                    Sube una imagen para comenzar.
+                </div>
+
+                <button type="button" id="ts-export-btn"
+                        class="ts-export-btn" disabled>
+                    <span>⇪</span> Exportar
+                </button>
+            </form>
+        </aside>
+    </main>
+
+    <script>
+    // Tiny UI glue: live value labels for sliders + auto-submit upload
+    document.addEventListener('input', function (e) {
+        if (e.target.matches('input[type=range]')) {
+            const out = document.querySelector('output[data-for="' + e.target.id + '"]');
+            if (out) {
+                const unit = out.dataset.unit || '';
+                out.textContent = parseFloat(e.target.value).toFixed(out.dataset.decimals || 1) + unit;
+            }
+        }
+    });
+
+    document.addEventListener('change', function (e) {
+        if (e.target.id === 'id_original') {
+            document.getElementById('ts-upload-form').requestSubmit();
+        }
+    });
+
+    // Segmented controls (Shape / DPI): keep `.is-on` in sync with checked radio
+    document.addEventListener('change', function (e) {
+        var t = e.target;
+        if (t.matches('.ts-shape-opt input, .ts-dpi-opt input')) {
+            var name = t.name;
+            document.querySelectorAll('input[name="' + name + '"]').forEach(function (r) {
+                r.parentElement.classList.toggle('is-on', r.checked);
+            });
+        }
+    });
+
+    // Drag & drop on the dropzone
+    document.addEventListener('dragover', function (e) {
+        if (e.target.closest('.ts-dropzone')) {
+            e.preventDefault();
+            e.target.closest('.ts-dropzone').classList.add('is-drag');
+        }
+    });
+    document.addEventListener('dragleave', function (e) {
+        const dz = e.target.closest('.ts-dropzone');
+        if (dz) dz.classList.remove('is-drag');
+    });
+    document.addEventListener('drop', function (e) {
+        const dz = e.target.closest('.ts-dropzone');
+        if (!dz) return;
+        e.preventDefault();
+        dz.classList.remove('is-drag');
+        const input = document.getElementById('id_original');
+        if (input && e.dataTransfer.files.length) {
+            input.files = e.dataTransfer.files;
+            input.dispatchEvent(new Event('change', {bubbles: true}));
+        }
+    });
+    </script>
+</body>
+</html>

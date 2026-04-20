@@ -1,0 +1,18 @@
+{% load i18n %}
+{% if job.status == 'done' and job.export %}
+    <div class="ts-status ts-status--ok">
+        ✓ Listo · <a class="ts-link" href="{% url 'halftone:download_export' job.pk %}">Descargar PNG</a>
+    </div>
+{% elif job.status == 'error' %}
+    <div class="ts-status ts-status--err">
+        ✗ Error: {{ job.error_message }}
+    </div>
+{% else %}
+    <div class="ts-status ts-status--busy"
+         hx-get="{% url 'halftone:job_status' job.pk %}?mode=export"
+         hx-trigger="load delay:1500ms"
+         hx-target="#ts-status"
+         hx-swap="innerHTML">
+        <span class="ts-spinner"></span> Renderizando exportación a {{ job.export_dpi }} DPI…
+    </div>
+{% endif %}

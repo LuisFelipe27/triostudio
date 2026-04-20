@@ -1,0 +1,116 @@
+{% load i18n %}
+
+<!-- ============= COLOR ============= -->
+<section class="ts-panel">
+    <header class="ts-panel-title">COLOR</header>
+
+    <div class="ts-field ts-field--row">
+        <label for="{{ form.knockout_color.id_for_label }}">
+            Knockout Color
+            <span class="ts-help" title="Color de la tinta (puntos)">?</span>
+        </label>
+        <label class="ts-toggle">
+            {{ form.knockout_enable }} Enable
+        </label>
+    </div>
+    <div class="ts-color-row">
+        <div class="ts-swatch" style="background: {{ form.knockout_color.value|default:'#000000' }}"></div>
+        {{ form.knockout_color }}
+        <button type="button" class="ts-eyedrop" tabindex="-1">⛶</button>
+    </div>
+
+    <div class="ts-field">
+        <label for="{{ form.bg_color.id_for_label }}">BG Color</label>
+    </div>
+    <div class="ts-color-row">
+        <div class="ts-swatch" style="background: {{ form.bg_color.value|default:'#FFFFFF' }}"></div>
+        {{ form.bg_color }}
+        <button type="button" class="ts-eyedrop" tabindex="-1">⛶</button>
+    </div>
+</section>
+
+<!-- ============= HALFTONE PATTERN ============= -->
+<section class="ts-panel">
+    <header class="ts-panel-title">HALFTONE PATTERN <span class="ts-chev">⌃</span></header>
+
+    <div class="ts-field">
+        <label>Dot Shape</label>
+        <div class="ts-shape-toggle" role="radiogroup">
+            {% for value, label in form.dot_shape.field.choices %}
+                <label class="ts-shape-opt {% if form.dot_shape.value == value %}is-on{% endif %}">
+                    <input type="radio" name="{{ form.dot_shape.name }}" value="{{ value }}"
+                           {% if form.dot_shape.value == value %}checked{% endif %}>
+                    {% if value == 'circle' %}●{% else %}╱╱{% endif %}
+                </label>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="ts-field">
+        <div class="ts-row-between">
+            <label for="{{ form.dot_size.id_for_label }}">Dot Size</label>
+            <output data-for="{{ form.dot_size.id_for_label }}" data-unit=" px" data-decimals="1">
+                {{ form.dot_size.value|default:"10.0" }} px
+            </output>
+        </div>
+        {{ form.dot_size }}
+    </div>
+
+    <div class="ts-field">
+        <div class="ts-row-between">
+            <label for="{{ form.dot_angle.id_for_label }}">Dot Angle</label>
+            <output data-for="{{ form.dot_angle.id_for_label }}" data-unit="°" data-decimals="1">
+                {{ form.dot_angle.value|default:"45.0" }}°
+            </output>
+        </div>
+        {{ form.dot_angle }}
+    </div>
+</section>
+
+<!-- ============= SIZE SETTINGS ============= -->
+<section class="ts-panel">
+    <header class="ts-panel-title">SIZE SETTINGS <span class="ts-chev">⌃</span></header>
+
+    <div class="ts-field">
+        <div class="ts-row-between">
+            <label for="{{ form.print_width_cm.id_for_label }}">Print Width</label>
+            <output data-for="{{ form.print_width_cm.id_for_label }}" data-unit="cm" data-decimals="1">
+                {{ form.print_width_cm.value|default:"25.0" }}cm
+            </output>
+        </div>
+        {{ form.print_width_cm }}
+        <small class="ts-hint">Height auto adapts to the image ratio.</small>
+    </div>
+
+    <div class="ts-field">
+        <label>Export DPI</label>
+        <div class="ts-dpi-toggle">
+            <label class="ts-dpi-opt {% if form.export_dpi.value|stringformat:'s' == '300' %}is-on{% endif %}">
+                <input type="radio" name="{{ form.export_dpi.name }}" value="300"
+                       {% if form.export_dpi.value|stringformat:"s" == "300" %}checked{% endif %}> 300
+            </label>
+            <label class="ts-dpi-opt {% if form.export_dpi.value|stringformat:'s' == '450' %}is-on{% endif %}">
+                <input type="radio" name="{{ form.export_dpi.name }}" value="450"
+                       {% if form.export_dpi.value|stringformat:"s" == "450" %}checked{% endif %}> 450
+            </label>
+            <label class="ts-dpi-opt {% if form.export_dpi.value|stringformat:'s' == '600' %}is-on{% endif %}">
+                <input type="radio" name="{{ form.export_dpi.name }}" value="600"
+                       {% if form.export_dpi.value|stringformat:"s" == "600" %}checked{% endif %}> 600
+            </label>
+        </div>
+    </div>
+</section>
+
+<!-- ============= ADVANCED ============= -->
+<section class="ts-panel ts-panel--advanced">
+    <header class="ts-panel-title ts-panel-title--mini">› ADVANCED</header>
+    <div class="ts-field">
+        <div class="ts-row-between">
+            <label for="{{ form.contrast_boost.id_for_label }}">Contrast</label>
+            <output data-for="{{ form.contrast_boost.id_for_label }}" data-unit="" data-decimals="2">
+                {{ form.contrast_boost.value|default:"1.20" }}
+            </output>
+        </div>
+        {{ form.contrast_boost }}
+    </div>
+</section>

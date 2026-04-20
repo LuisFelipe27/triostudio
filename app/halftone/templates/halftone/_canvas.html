@@ -1,0 +1,39 @@
+{% load i18n %}
+<div class="ts-canvas-content">
+    <div class="ts-canvas-original">
+        <span class="ts-canvas-tag">Original</span>
+        <img src="{{ job.original.url }}" alt="original">
+    </div>
+    <div class="ts-canvas-preview ts-checker"
+         id="ts-preview-pane"
+         hx-get="{% url 'halftone:job_status' job.pk %}?mode=preview"
+         hx-trigger="every 1500ms"
+         hx-target="#ts-status"
+         hx-swap="innerHTML">
+        <span class="ts-canvas-tag">Halftone</span>
+        {% if job.preview %}
+            <img src="{{ job.preview.url }}?v={{ job.modified|date:'U' }}" alt="halftone preview" id="ts-preview-img">
+        {% else %}
+            <div class="ts-empty">Procesando vista previa…</div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Re-bind the params form to this job & re-enable the export button -->
+<script>
+(function () {
+    var paramsForm = document.getElementById('ts-params-form');
+    if (paramsForm) {
+        paramsForm.setAttribute('hx-post', '{% url "halftone:update_params" job.pk %}');
+        if (window.htmx) htmx.process(paramsForm);
+    }
+    var exportBtn = document.getElementById('ts-export-btn');
+    if (exportBtn) {
+        exportBtn.disabled = false;
+        exportBtn.setAttribute('hx-post', '{% url "halftone:export_job" job.pk %}');
+        exportBtn.setAttribute('hx-target', '#ts-status');
+        exportBtn.setAttribute('hx-swap', 'innerHTML');
+        if (window.htmx) htmx.process(exportBtn);
+    }
+})();
+</script>

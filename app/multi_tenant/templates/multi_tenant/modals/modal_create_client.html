@@ -1,0 +1,167 @@
+{% load filters %}
+<div class="modal-header">
+    <h3 class="modal-title">{% trans "Crear Cliente" %}</h3>
+
+    <!--begin::Close-->
+    <div class="btn btn-icon btn-sm btn-active-light-primary ms-2" data-bs-dismiss="modal" aria-label="Close">
+        <span class="svg-icon svg-icon-2">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect opacity="0.5" x="7.05025" y="15.5356" width="12" height="2" rx="1" transform="rotate(-45 7.05025 15.5356)" fill="currentColor" />
+                <rect x="8.46447" y="7.05029" width="12" height="2" rx="1" transform="rotate(45 8.46447 7.05029)" fill="currentColor" />
+            </svg>
+        </span>
+    </div>
+    <!--end::Close-->
+</div>
+
+<div class="modal-body">
+    <!--begin::Form-->
+    <form id="kt_modal_create_liquidations_form" class="form" action="{% url 'multi_tenant:modal-create-client' %}" method="post">
+        <!--begin::Scroll-->
+        <div class="d-flex flex-column scroll-y me-n7 pe-7" id="kt_modal_add_user_scroll" data-kt-scroll="true" data-kt-scroll-activate="{default: false, lg: true}">
+            <!--begin::Input group-->
+            <div class="fv-row mb-8">
+                <!--begin::Label-->
+                <label class="required fs-6 fw-semibold mb-2">{% trans "Nombre del Edificio" %}</label>
+                <!--end::Label-->
+                <!--begin::Input-->
+                <input type="text" class="form-control form-control-solid" name="nombre_negocio" id="id_nombre_negocio" value=""/>
+                <!--end::Input-->
+            </div>
+            <!--end::Input group-->
+            <!--begin::Input group-->
+            <div class="fv-row mb-8">
+                <!--begin::Label-->
+                <label class="required fs-6 fw-semibold mb-2">{% trans "URL Dominio" %}</label>
+                <!--end::Label-->
+                <!--begin::Input-->
+                <div class="input-group mb-5">
+                    <span class="input-group-text" id="basic-addon3">https://</span>
+                    <input type="text" name="dominio" class="form-control" id="id_dominio" aria-describedby="basic-addon3"/>
+                    <span class="input-group-text" id="basic-addon3">{% if enviroment_name %}-{{ enviroment_name }}{% endif %}.ordenadito.cl</span>
+                </div>
+                <!--end::Input-->
+            </div>
+            <!--end::Input group-->
+
+            <div class="fv-row mb-8">
+                <!--begin::Label-->
+                <label class="required fs-6 fw-semibold mb-2">{% trans "Email" %}</label>
+                <!--end::Label-->
+                <!--begin::Input-->
+                <input type="email" class="form-control  form-control-solid" name="email" value=""/>
+                <!--end::Input-->
+            </div>
+
+            <div class="fv-row mb-8">
+                <!--begin::Label-->
+                <label class="required fs-6 fw-semibold mb-2">{% trans "Contraseña" %}</label>
+                <!--end::Label-->
+                <!--begin::Input-->
+                <input type="password" class="form-control  form-control-solid" name="password" value=""/>
+                <!--end::Input-->
+            </div>
+
+        </div>
+        <!--end::Scroll-->
+    </form>
+    <!--end::Form-->
+
+</div>
+
+<div class="modal-footer">
+    <button type="button" class="btn btn-light" data-bs-dismiss="modal">{% trans "Cerrar" %}</button>
+    <button type="button" class="btn btn-primary" id="js-btn-confirm-liquidation">
+        {% include 'partials/general/_button-indicator.html' with label='Crear'|translate_text message='Cargando'|translate_text %}
+        {% getSvgIcon 'duotune/arrows/arr064.svg' 'svg-icon svg-icon-2 me-n1' %}
+    </button>
+</div>
+
+<script>
+    $(document).ready(function(){
+        $('#baseModal').find('.modal-dialog').addClass('mw-750px');
+        const fieldsToValidate = {
+            nombre_negocio: {
+                validators:{
+                    notEmpty: {
+                        message: '{% trans "Nombre de Negocio es requerido" %}'
+                    }
+                }
+            },
+            dominio: {
+                validators:{
+                    notEmpty: {
+                        message: '{% trans "URL Dominio es requerido" %}'
+                    }
+                }
+            },
+            email: {
+                validators: {
+                    emailAddress:{
+                       message: '{% trans "Valor no es un email valido" %}'
+                    },
+                    notEmpty: {
+                        message: '{% trans "Email es requerido" %}'
+                    }
+                }
+            },
+            password: {
+                validators:{
+                    notEmpty: {
+                        message: '{% trans "Contraseña es requerida" %}'
+                    }
+                }
+            },
+        }
+        KTFormValidation.init('#kt_modal_create_liquidations_form', '#js-btn-confirm-liquidation', fieldsToValidate);
+    });
+    var normalize = (function() {
+        var from = "ÃÀÁÄÂÈÉËÊÌÍÏÎÒÓÖÔÙÚÜÛãàáäâèéëêìíïîòóöôùúüûÑñÇç",
+        to   = "AAAAAEEEEIIIIOOOOUUUUaaaaaeeeeiiiioooouuuunncc",
+        mapping = {};
+
+        for(var i = 0, j = from.length; i < j; i++ )
+            mapping[ from.charAt( i ) ] = to.charAt( i );
+
+        return function( str ) {
+            var ret = [];
+            for( var i = 0, j = str.length; i < j; i++ ) {
+                var c = str.charAt( i );
+                if( mapping.hasOwnProperty( str.charAt( i ) ) )
+                    ret.push( mapping[ c ] );
+                else
+                    ret.push( c );
+            }
+            return ret.join( '' ).replace( /[^-A-Za-z0-9]+/g, '-' ).toLowerCase();
+        }
+
+    })();
+
+    function formatDominio(string){
+        $('#id_dominio').val(normalize(string));
+    }
+
+    function queryDominio(){
+        var $dominio = $('#id_dominio');
+        if($dominio.val()){
+            $.get('/api/tenant/ruta/?format=json&dominio=' + $dominio.val(), function(data){
+                console.log(data)
+                if(data.ruta_ocupada != ''){
+                    $dominio.val(data.ruta);
+                    toastr.info('El dominio ' + data.ruta_ocupada + ' no está disponible, por lo que ha sido reemplazado.');
+                }
+            }, 'json');
+        }
+    }
+
+    $('#id_nombre_negocio').on('blur', function(){
+        formatDominio($(this).val());
+        queryDominio()
+    });
+
+    $('#id_dominio').on('blur', function(){
+        formatDominio($(this).val());
+        queryDominio()
+    });
+
+</script>

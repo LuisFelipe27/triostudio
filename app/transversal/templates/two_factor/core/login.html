@@ -1,0 +1,300 @@
+{% extends 'transversal/layout/auth.html' %}
+
+{% load i18n filters %}
+{% block title %}{% trans "Inicio de Sesión" %}{% endblock %}
+
+{% block content %}
+
+<style>
+    .login-title {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: var(--auth-gray-900);
+        margin-bottom: .25rem;
+    }
+    .login-subtitle {
+        font-size: .9rem;
+        color: var(--auth-gray-500);
+        margin-bottom: 2rem;
+    }
+
+    .login-field {
+        position: relative;
+        margin-bottom: 1.25rem;
+    }
+    .login-field label {
+        display: block;
+        font-size: .78rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        color: var(--auth-gray-500);
+        margin-bottom: .4rem;
+    }
+    .login-field .field-icon {
+        position: absolute;
+        left: 14px;
+        bottom: 13px;
+        color: var(--auth-gray-400);
+        font-size: 1.1rem;
+        pointer-events: none;
+    }
+    .login-input {
+        width: 100%;
+        padding: .75rem .875rem .75rem 2.6rem;
+        border: 1.5px solid var(--auth-gray-200);
+        border-radius: 12px;
+        font-size: .95rem;
+        color: var(--auth-gray-900);
+        background: #fff;
+        transition: border-color .2s, box-shadow .2s;
+        outline: none;
+    }
+    .login-input::placeholder { color: var(--auth-gray-400); }
+    .login-input:focus {
+        border-color: var(--auth-primary);
+        box-shadow: 0 0 0 3px rgba(79,70,229,.12);
+    }
+
+    .login-alert {
+        display: flex;
+        align-items: flex-start;
+        gap: .6rem;
+        padding: .8rem 1rem;
+        border-radius: 10px;
+        margin-bottom: 1.25rem;
+        font-size: .85rem;
+        background: #FEF2F2;
+        color: #991B1B;
+        border: 1px solid #FEE2E2;
+    }
+    .login-alert i { font-size: 1.1rem; color: var(--auth-danger); margin-top: 1px; flex-shrink: 0; }
+
+    .login-link {
+        font-size: .85rem;
+        color: var(--auth-primary);
+        text-decoration: none;
+        font-weight: 500;
+        transition: color .2s;
+    }
+    .login-link:hover { color: var(--auth-primary-hover); text-decoration: underline; }
+
+    .login-btn {
+        width: 100%;
+        padding: .8rem 1.5rem;
+        border: none;
+        border-radius: 12px;
+        font-size: .95rem;
+        font-weight: 600;
+        color: #fff;
+        background: var(--auth-primary);
+        cursor: pointer;
+        transition: background .2s, transform .1s;
+    }
+    .login-btn:hover { background: var(--auth-primary-hover); }
+    .login-btn:active { transform: scale(.98); }
+    .login-btn:disabled { opacity: .6; cursor: not-allowed; }
+
+    /* 2FA step */
+    .tfa-heading { text-align: center; margin-bottom: 1.5rem; }
+    .tfa-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: rgba(79,70,229,.1);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1rem;
+    }
+    .tfa-icon i { font-size: 1.6rem; color: var(--auth-primary); }
+    .tfa-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--auth-gray-900);
+        margin-bottom: .4rem;
+    }
+    .tfa-subtitle {
+        font-size: .85rem;
+        color: var(--auth-gray-500);
+    }
+
+    .otp-group {
+        display: flex;
+        justify-content: center;
+        gap: .5rem;
+        margin-bottom: 1.5rem;
+    }
+    .otp-input {
+        width: 48px;
+        height: 56px;
+        text-align: center;
+        font-size: 1.4rem;
+        font-weight: 700;
+        border: 1.5px solid var(--auth-gray-200);
+        border-radius: 10px;
+        color: var(--auth-gray-900);
+        background: #fff;
+        outline: none;
+        transition: border-color .2s, box-shadow .2s;
+    }
+    .otp-input:focus {
+        border-color: var(--auth-primary);
+        box-shadow: 0 0 0 3px rgba(79,70,229,.12);
+    }
+
+    @media (max-width: 400px) {
+        .otp-input { width: 40px; height: 48px; font-size: 1.2rem; }
+    }
+
+    [data-bs-theme="dark"] .login-input,
+    [data-bs-theme="dark"] .otp-input {
+        background: #1E293B;
+        border-color: #334155;
+        color: #F1F5F9;
+    }
+    [data-bs-theme="dark"] .login-title,
+    [data-bs-theme="dark"] .tfa-title { color: #F1F5F9; }
+    [data-bs-theme="dark"] .login-alert {
+        background: #451A1A;
+        border-color: #7F1D1D;
+        color: #FCA5A5;
+    }
+</style>
+
+<form method="post" class="w-100" id="loginForm" action="" novalidate>
+    {% csrf_token %}
+    {{ wizard.management_form }}
+
+    {% if form.errors %}
+    <div class="login-alert">
+        <i class="bi bi-exclamation-circle"></i>
+        <span>
+            {% if wizard.steps.current == 'auth' %}
+                {{ form.non_field_errors.as_text }}
+            {% else %}
+                {% trans "Código de verificación incorrecto, por favor intente nuevamente" %}
+            {% endif %}
+        </span>
+    </div>
+    {% endif %}
+
+    {% if wizard.steps.current == 'auth' %}
+    <!-- Step 1: Username & Password -->
+    <h1 class="login-title">{% trans "Bienvenido" %}</h1>
+    <p class="login-subtitle">{% trans "Ingresa tus credenciales para continuar" %}</p>
+
+    <div class="login-field">
+        <label for="id_auth_username">{% trans "Usuario" %}</label>
+        <i class="bi bi-person field-icon"></i>
+        <input type="text"
+               id="id_auth_username"
+               name="auth-username"
+               class="login-input"
+               placeholder="{% trans "Nombre de usuario" %}"
+               autocomplete="username"
+               autofocus
+               required>
+    </div>
+
+    <div class="login-field">
+        <label for="id_auth_password">{% trans "Contraseña" %}</label>
+        <i class="bi bi-lock field-icon"></i>
+        <input type="password"
+               id="id_auth_password"
+               name="auth-password"
+               class="login-input"
+               placeholder="{% trans "Tu contraseña" %}"
+               autocomplete="current-password"
+               required>
+    </div>
+
+    <div class="d-flex justify-content-end mb-4">
+        <a href="/forget-password" class="login-link">{% trans "¿Recuperar contraseña?" %}</a>
+    </div>
+
+    <button type="submit" class="login-btn" id="loginSubmitBtn">
+        {% trans "Entrar" %}
+    </button>
+
+    {% elif wizard.steps.current == 'token' %}
+    <!-- Step 2: Two-Factor Verification -->
+    <div class="tfa-heading">
+        <div class="tfa-icon"><i class="bi bi-shield-lock"></i></div>
+        <h2 class="tfa-title">{% trans "Verificación de Seguridad" %}</h2>
+        <p class="tfa-subtitle">{% trans "Ingresa el código de 6 dígitos de tu aplicación de autenticación" %}</p>
+    </div>
+
+    <div class="otp-group">
+        <input type="text" name="token-code_1" maxlength="1" class="otp-input" inputmode="numeric" autocomplete="one-time-code" autofocus>
+        <input type="text" name="token-code_2" maxlength="1" class="otp-input" inputmode="numeric">
+        <input type="text" name="token-code_3" maxlength="1" class="otp-input" inputmode="numeric">
+        <input type="text" name="token-code_4" maxlength="1" class="otp-input" inputmode="numeric">
+        <input type="text" name="token-code_5" maxlength="1" class="otp-input" inputmode="numeric">
+        <input type="text" name="token-code_6" maxlength="1" class="otp-input" inputmode="numeric">
+        <input type="hidden" name="token-otp_token" value="">
+    </div>
+
+    <button type="submit" class="login-btn" id="loginSubmitBtn">
+        {% trans "Verificar" %}
+    </button>
+    {% endif %}
+</form>
+
+<script>
+(function() {
+    // OTP auto-advance & auto-join
+    var inputs = document.querySelectorAll('.otp-input');
+    if (inputs.length > 0) {
+        inputs.forEach(function(inp, i) {
+            inp.addEventListener('input', function() {
+                if (inp.value && i < inputs.length - 1) {
+                    inputs[i + 1].focus();
+                }
+            });
+            inp.addEventListener('keydown', function(e) {
+                if (e.key === 'Backspace' && !inp.value && i > 0) {
+                    inputs[i - 1].focus();
+                }
+            });
+            inp.addEventListener('paste', function(e) {
+                e.preventDefault();
+                var paste = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '');
+                for (var j = 0; j < Math.min(paste.length, inputs.length); j++) {
+                    inputs[j].value = paste[j];
+                }
+                var next = Math.min(paste.length, inputs.length) - 1;
+                if (next >= 0) inputs[next].focus();
+            });
+        });
+
+        // Combine OTP into hidden field on submit
+        var hidden = document.querySelector('input[name="token-otp_token"]');
+        if (hidden) {
+            document.getElementById('loginForm').addEventListener('submit', function() {
+                var code = '';
+                inputs.forEach(function(inp) { code += inp.value; });
+                hidden.value = code;
+            });
+        }
+    }
+
+    // Loading state on submit
+    var form = document.getElementById('loginForm');
+    if (form) {
+        form.addEventListener('submit', function() {
+            var btn = document.getElementById('loginSubmitBtn');
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = '';
+                var spinner = document.createElement('span');
+                spinner.className = 'spinner-border spinner-border-sm me-2';
+                btn.appendChild(spinner);
+                btn.appendChild(document.createTextNode('Cargando...'));
+            }
+        });
+    }
+})();
+</script>
+
+{% endblock content %}

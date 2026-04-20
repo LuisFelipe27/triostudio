@@ -1,0 +1,81 @@
+services:
+
+  app_triostudio:
+    build:
+      context: .
+      args:
+        - PORT_EXPOSE=${PORT_EXPOSE}
+    container_name: triostudio_app_${COUNTRY}_${ENV_NAME}
+    restart: always
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+    volumes:
+      - /etc/localtime:/etc/localtime
+      - .:/opt/apps/triostudio
+      - ./static:/opt/apps/triostudio/static  # <-- bind the static
+      - ./media:/opt/apps/triostudio/media  # <-- bind the media
+    expose:
+      - "${PORT_EXPOSE}"
+    depends_on:
+      - redis
+    # networks:  # <-- here
+    #   default:
+    #     ipv4_address: ${IP_DJANGO}
+
+  redis:
+    image: redis:7-alpine
+    container_name: triostudio_redis_${COUNTRY}_${ENV_NAME}
+    restart: always
+    volumes:
+      - /etc/localtime:/etc/localtime
+    # networks:
+    #   - default
+
+  celery_worker:
+    build:
+      context: .
+      args:
+        - PORT_EXPOSE=${PORT_EXPOSE}
+    container_name: triostudio_celery_${COUNTRY}_${ENV_NAME}
+    restart: always
+    command: celery -A config worker -l info --concurrency=2
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+    volumes:
+      - /etc/localtime:/etc/localtime
+      - .:/opt/apps/triostudio
+      - ./media:/opt/apps/triostudio/media
+    depends_on:
+      - redis
+      - app_triostudio
+    # networks:
+    #   - default
+
+  nginx:
+    image: nginx:1.19
+    container_name: triostudio_nginx_${COUNTRY}_${ENV_NAME}
+    restart: always
+    environment:
+      - PORT_EXPOSE=${PORT_EXPOSE}
+      - PORT=${PORT}
+    ports:
+       - ${PORT_EXPOSE}:${PORT}
+    volumes:
+      - /etc/localtime:/etc/localtime
+      - ./config/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./config/nginx/templates:/etc/nginx/templates
+      - ./config/nginx/conf.d:/etc/nginx/conf.d
+      - ./static:/opt/apps/triostudio/static  # <-- bind the static
+      - ./media:/opt/apps/triostudio/media  # <-- bind the media
+    depends_on:
+      - app_triostudio
+    # networks:  # <-- here
+    #   default:
+    #     ipv4_address: ${IP_NGINX}
+
+# networks:  # <-- and here
+#   default:
+#     external: true
+#     name: autoconf

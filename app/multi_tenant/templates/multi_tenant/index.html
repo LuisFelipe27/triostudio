@@ -1,0 +1,96 @@
+{% extends 'transversal/layout/default.html' %}
+
+{% block title %}{% trans "Clientes" %}{% endblock %}
+
+{% block content %}
+<!--begin::Toolbar-->
+<div class="d-flex flex-wrap flex-stack mb-6">
+    <!--begin::Heading-->
+    <h3 class="fw-bold my-2">{% trans "Listado de Clientes" %}</h3>
+    <!--end::Heading-->
+    <!--begin::Actions-->
+    <div class="d-flex flex-wrap my-2">
+        <a data-bs-toggle="modal" href="{% url 'multi_tenant:modal-create-client' %}"
+           data-bs-target="#baseModal"
+           class="btn btn-primary btn-sm">
+            {% trans "Nuevo Cliente" %}
+        </a>
+    </div>
+    <!--end::Actions-->
+</div>
+<!--end::Toolbar-->
+<!--begin::Row-->
+<div class="row g-6 g-xl-9">
+    {% if tenants %}
+        {% for tenant in tenants %}
+            <!--begin::Col-->
+            <div class="col-md-6 col-xl-4">
+                <!--begin::Card-->
+                <a href="https://{{ tenant.domain_url }}" target="_blank" class="card border-hover-primary">
+                    <!--begin::Card header-->
+                    <div class="card-header border-0 pt-9">
+                        <!--begin::Card Title-->
+                        <div class="card-title m-0">
+                            <!--begin::Avatar-->
+                            <div class="symbol symbol-50px w-50px">
+                                {% getSvgIcon 'duotune/finance/fin001.svg' 'svg-icon svg-icon-2hx' %}
+                            </div>
+                            <!--end::Avatar-->
+                        </div>
+                        <!--end::Car Title-->
+                        {% if tenant.configtenant.expiracion %}
+                            <!--begin::Card toolbar-->
+                            <div class="card-toolbar">
+                                <span class="badge badge-light-danger fw-bold me-auto px-4 py-3">{% trans "Desactivado" %}</span>
+                            </div>
+                            <!--end::Card toolbar-->
+                        {% else %}
+                            <!--begin::Card toolbar-->
+                            <div class="card-toolbar">
+                                <span class="badge badge-light-success fw-bold me-auto px-4 py-3">{% trans "Activo" %}</span>
+                            </div>
+                            <!--end::Card toolbar-->
+                        {% endif %}
+
+                    </div>
+                    <!--end:: Card header-->
+                    <!--begin:: Card body-->
+                    <div class="card-body p-9">
+                        <!--begin::Name-->
+                        <div class="fs-3 fw-bold text-dark">{{ tenant.name }}</div>
+                        <!--end::Name-->
+                        <!--begin::Info-->
+                        <div class="d-flex flex-wrap mt-2 mb-5">
+                            <!--begin::Due-->
+                            <div class="border border-gray-300 border-dashed rounded min-w-125px py-3 px-4 me-7 mb-3">
+                                <div class="fs-6 text-gray-800 fw-bold">{{ tenant.created|date:"d/m/Y"}}</div>
+                                <div class="fw-semibold text-gray-400">{% trans "Fecha Creación" %}</div>
+                            </div>
+                            <!--end::Due-->
+                        </div>
+                        <!--end::Info-->
+                        {% if tenant.configtenant.expiracion %}
+                        <!--begin::Info-->
+                        <div class="d-flex flex-wrap mb-5">
+                            <!--begin::Due-->
+                            <div class="border border-gray-300 border-dashed rounded min-w-125px py-3 px-4 me-7 mb-3">
+                                <div class="fs-6 text-gray-800 fw-bold">{{ tenant.configtenant.expiracion|date:"d/m/Y"}}</div>
+                                <div class="fw-semibold text-gray-400">{% trans "Fecha Expiración" %}</div>
+                            </div>
+                            <!--end::Due-->
+                        </div>
+                        <!--end::Info-->
+                        {% endif %}
+                    </div>
+                    <!--end:: Card body-->
+                </a>
+                <!--end::Card-->
+            </div>
+            <!--end::Col-->
+        {% endfor %}
+    {% else %}
+        <h3 class="fw-bold my-2">{% trans "No hay Clientes Creados" %}</h3>
+    {% endif %}
+</div>
+<!--end::Row-->
+{% endblock content %}
