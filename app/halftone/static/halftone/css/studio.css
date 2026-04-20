@@ -184,6 +184,7 @@ html, body {
     gap: 8px;
     z-index: 5;
 }
+.ts-canvas-actions[hidden] { display: none; }
 .ts-btn-dark {
     background: var(--ink);
     color: #fff;
@@ -212,6 +213,7 @@ html, body {
     gap: 2px;
     z-index: 5;
 }
+.ts-zoombar[hidden] { display: none; }
 .ts-zoom-btn {
     background: transparent;
     border: none;
@@ -534,6 +536,29 @@ input[type=range]::-moz-range-thumb {
     justify-content: space-between;
     align-items: center;
 }
+
+/* Advanced sub-sections (PRE-PROCESAMIENTO / EQUILIBRIO TONAL) */
+.ts-adv-sub {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    margin-top: 10px;
+    overflow: hidden;
+}
+.ts-adv-sub-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    color: var(--accent-2);
+    background: #f8fafc;
+    cursor: pointer;
+    user-select: none;
+}
+.ts-adv-sub-title:hover { color: var(--ink); }
+.ts-adv-sub > div { padding: 10px; }
 .ts-chev { font-size: 10px; color: var(--muted); }
 
 /* Responsive tweaks so nothing breaks on smaller viewports */

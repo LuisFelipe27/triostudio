@@ -134,6 +134,10 @@
         id_print_width_cm:  { type: 'range',    value: '25' },
         id_export_dpi:      { type: 'radio',    value: '300' },
         id_contrast_boost:  { type: 'range',    value: '1.2' },
+        id_blur:            { type: 'range',    value: '0' },
+        id_gamma:           { type: 'range',    value: '1' },
+        id_gradient_intensity: { type: 'range', value: '0.8' },
+        id_brightness:      { type: 'range',    value: '0' },
     };
 
     function resetForm() {
@@ -181,10 +185,12 @@
             return;
         }
 
-        // Toggle AVANZADO section
-        if (e.target.closest('.ts-collapsible')) {
-            var body = document.getElementById('ts-advanced-body');
-            var chev = document.getElementById('ts-advanced-chev');
+        // Toggle any collapsible section (uses data-target attribute)
+        var coll = e.target.closest('.ts-collapsible');
+        if (coll) {
+            var targetId = coll.dataset.target;
+            var body = targetId ? document.getElementById(targetId) : null;
+            var chev = coll.querySelector('.ts-chev');
             if (body) body.hidden = !body.hidden;
             if (chev) chev.textContent = body && !body.hidden ? '\u25B2' : '\u25BC';
             return;

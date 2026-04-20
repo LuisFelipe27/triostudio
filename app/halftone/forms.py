@@ -20,6 +20,7 @@ class HalftoneParamsForm(forms.ModelForm):
             'knockout_enable', 'knockout_color', 'bg_color',
             'dot_shape', 'dot_size', 'dot_angle',
             'print_width_cm', 'export_dpi', 'contrast_boost',
+            'blur', 'gamma', 'gradient_intensity', 'brightness',
         )
         widgets = {
             'knockout_color': forms.TextInput(attrs={'type': 'color'}),
@@ -35,5 +36,17 @@ class HalftoneParamsForm(forms.ModelForm):
             }),
             'contrast_boost': forms.NumberInput(attrs={
                 'type': 'range', 'min': 0.5, 'max': 2.5, 'step': 0.05,
+            }),
+            'blur': forms.NumberInput(attrs={
+                'type': 'range', 'min': 0, 'max': 10, 'step': 0.1,
+            }),
+            'gamma': forms.NumberInput(attrs={
+                'type': 'range', 'min': 0.1, 'max': 3.0, 'step': 0.05,
+            }),
+            'gradient_intensity': forms.NumberInput(attrs={
+                'type': 'range', 'min': 0, 'max': 1, 'step': 0.05,
+            }),
+            'brightness': forms.NumberInput(attrs={
+                'type': 'range', 'min': -1, 'max': 1, 'step': 0.05,
             }),
         }

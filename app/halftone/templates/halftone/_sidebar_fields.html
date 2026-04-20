@@ -33,7 +33,17 @@
             {% for value, label in form.dot_shape.field.choices %}
                 <label class="ts-shape-opt {% if form.dot_shape.value == value %}is-on{% endif %}" title="{{ label }}">
                     <input type="radio" name="{{ form.dot_shape.name }}" value="{{ value }}" {% if form.dot_shape.value == value %}checked{% endif %}>
-                    {% if value == 'circle' %}&bull;{% else %}&#9641;{% endif %}
+                    {% if value == 'circle' %}
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <circle cx="9" cy="9" r="7"/>
+                    </svg>
+                    {% else %}
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <rect x="1" y="2"  width="16" height="3" rx="1.5"/>
+                        <rect x="1" y="7"  width="16" height="3" rx="1.5"/>
+                        <rect x="1" y="12" width="16" height="3" rx="1.5"/>
+                    </svg>
+                    {% endif %}
                 </label>
             {% endfor %}
         </div>
@@ -85,12 +95,61 @@
         <span class="ts-chev" id="ts-advanced-chev">&#9660;</span>
     </header>
     <div id="ts-advanced-body" hidden>
-        <div class="ts-field">
-            <div class="ts-row-between">
-                <label for="{{ form.contrast_boost.id_for_label }}">Contraste</label>
-                <output data-for="{{ form.contrast_boost.id_for_label }}" data-unit="" data-decimals="2">{{ form.contrast_boost.value|default:"1.20" }}</output>
+
+        <!-- PRE-PROCESAMIENTO -->
+        <div class="ts-adv-sub">
+            <header class="ts-adv-sub-title ts-collapsible" data-target="ts-adv-pre">
+                <span>PRE-PROCESAMIENTO</span>
+                <span class="ts-chev">&#9660;</span>
+            </header>
+            <div id="ts-adv-pre">
+                <div class="ts-field">
+                    <div class="ts-row-between">
+                        <label for="{{ form.blur.id_for_label }}">Desenfoque</label>
+                        <output data-for="{{ form.blur.id_for_label }}" data-unit="px" data-decimals="1">{{ form.blur.value|default:"0.0" }}px</output>
+                    </div>
+                    {{ form.blur }}
+                </div>
+                <div class="ts-field">
+                    <div class="ts-row-between">
+                        <label for="{{ form.gamma.id_for_label }}">Gamma</label>
+                        <output data-for="{{ form.gamma.id_for_label }}" data-unit="" data-decimals="1">{{ form.gamma.value|default:"1.0" }}</output>
+                    </div>
+                    {{ form.gamma }}
+                </div>
             </div>
-            {{ form.contrast_boost }}
         </div>
+
+        <!-- EQUILIBRIO TONAL -->
+        <div class="ts-adv-sub">
+            <header class="ts-adv-sub-title ts-collapsible" data-target="ts-adv-tonal">
+                <span>EQUILIBRIO TONAL</span>
+                <span class="ts-chev">&#9660;</span>
+            </header>
+            <div id="ts-adv-tonal">
+                <div class="ts-field">
+                    <div class="ts-row-between">
+                        <label for="{{ form.gradient_intensity.id_for_label }}">Intensidad de gradiente</label>
+                        <output data-for="{{ form.gradient_intensity.id_for_label }}" data-unit="" data-decimals="2">{{ form.gradient_intensity.value|default:"0.80" }}</output>
+                    </div>
+                    {{ form.gradient_intensity }}
+                </div>
+                <div class="ts-field">
+                    <div class="ts-row-between">
+                        <label for="{{ form.contrast_boost.id_for_label }}">Contraste</label>
+                        <output data-for="{{ form.contrast_boost.id_for_label }}" data-unit="" data-decimals="2">{{ form.contrast_boost.value|default:"1.20" }}</output>
+                    </div>
+                    {{ form.contrast_boost }}
+                </div>
+                <div class="ts-field">
+                    <div class="ts-row-between">
+                        <label for="{{ form.brightness.id_for_label }}">Brillo</label>
+                        <output data-for="{{ form.brightness.id_for_label }}" data-unit="" data-decimals="2">{{ form.brightness.value|default:"0.00" }}</output>
+                    </div>
+                    {{ form.brightness }}
+                </div>
+            </div>
+        </div>
+
     </div>
 </section>

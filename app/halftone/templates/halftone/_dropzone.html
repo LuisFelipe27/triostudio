@@ -14,3 +14,17 @@
         <span id="ts-upload-spinner" class="ts-spinner htmx-indicator"></span>
     </label>
 </form>
+<script>
+(function () {
+    var a = document.getElementById('ts-canvas-actions');
+    var z = document.getElementById('ts-zoombar');
+    if (a) a.hidden = true;
+    if (z) z.hidden = true;
+    var status = document.getElementById('ts-status');
+    if (status) { status.className = 'ts-status ts-status--idle'; status.innerHTML = ''; }
+    var applyBtn = document.getElementById('ts-apply-btn');
+    if (applyBtn) { applyBtn.disabled = true; applyBtn.classList.remove('is-dirty'); applyBtn.dataset.paramsUrl = ''; }
+    var exportBtn = document.getElementById('ts-export-btn');
+    if (exportBtn) { exportBtn.disabled = true; exportBtn.dataset.exportUrl = ''; }
+})();
+</script>

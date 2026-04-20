@@ -77,7 +77,15 @@ class HalftoneJob(models.Model):
     print_width_cm = models.FloatField(_('Ancho de impresión (cm)'), default=25.0)
     export_dpi = models.PositiveIntegerField(_('DPI de exportación'), default=300)
 
-    contrast_boost = models.FloatField(_('Refuerzo de contraste'), default=1.2)
+    contrast_boost = models.FloatField(_('Contraste'), default=1.2)
+
+    # Advanced: pre-processing
+    blur = models.FloatField(_('Desenfoque (px)'), default=0.0)
+    gamma = models.FloatField(_('Gamma'), default=1.0)
+
+    # Advanced: tonal balance
+    gradient_intensity = models.FloatField(_('Intensidad de gradiente'), default=0.8)
+    brightness = models.FloatField(_('Brillo'), default=0.0)
 
     # --- Status tracking ---
     status = models.CharField(

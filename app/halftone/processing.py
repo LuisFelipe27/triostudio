@@ -83,6 +83,11 @@ class HalftoneParams:
     print_width_cm: float = 25.0
     export_dpi: int = 300
     contrast_boost: float = 1.2
+    # Advanced
+    blur: float = 0.0
+    gamma: float = 1.0
+    gradient_intensity: float = 0.8
+    brightness: float = 0.0
 
     @classmethod
     def from_model(cls, job) -> 'HalftoneParams':
@@ -99,6 +104,10 @@ class HalftoneParams:
             print_width_cm=float(job.print_width_cm),
             export_dpi=int(job.export_dpi),
             contrast_boost=float(job.contrast_boost),
+            blur=float(job.blur),
+            gamma=float(job.gamma),
+            gradient_intensity=float(job.gradient_intensity),
+            brightness=float(job.brightness),
         )
 
 
@@ -176,17 +185,45 @@ def _resolve_alpha(rgba: Image.Image) -> Tuple[Image.Image, Tuple[int, int, int]
 # Preprocessing
 # ---------------------------------------------------------------------------
 
-def _prepare_input(img: Image.Image, contrast_boost: float):
+def _prepare_input(img: Image.Image, params):
     """Return (rgb, gray, alpha, bg_color) all aligned, with curves applied."""
+    # Accept both HalftoneParams object and plain float (legacy)
+    if isinstance(params, (int, float)):
+        contrast_boost = float(params)
+        blur = 0.0
+        gamma = 1.0
+        brightness = 0.0
+    else:
+        contrast_boost = float(params.contrast_boost)
+        blur = float(params.blur)
+        gamma = float(params.gamma)
+        brightness = float(params.brightness)
+
     rgba = img.convert('RGBA')
     alpha, bg_color = _resolve_alpha(rgba)
 
     rgb = rgba.convert('RGB')
 
+    # Pre-processing: blur
+    if blur > 0.01:
+        rgb = rgb.filter(ImageFilter.GaussianBlur(radius=blur))
+
     gray = rgb.convert('L')
     gray = ImageOps.autocontrast(gray, cutoff=2)
+
+    # Gamma correction
+    if abs(gamma - 1.0) > 0.01:
+        lut = [int(round(255 * ((i / 255.0) ** (1.0 / max(0.01, gamma))))) for i in range(256)]
+        gray = gray.point(lut)
+
+    # Contrast boost
     if contrast_boost and abs(contrast_boost - 1.0) > 1e-3:
         gray = ImageEnhance.Contrast(gray).enhance(contrast_boost)
+
+    # Brightness adjustment (-1..+1 mapped to -128..+128)
+    if abs(brightness) > 0.005:
+        b_shift = int(round(brightness * 128))
+        gray = gray.point(lambda v: max(0, min(255, v + b_shift)))
 
     # Mild saturation boost so colours stay punchy after screening.
     rgb = ImageEnhance.Color(rgb).enhance(1.15)
@@ -214,7 +251,7 @@ def render_halftone(
     params: HalftoneParams,
     dot_size_override: Optional[float] = None,
 ) -> Image.Image:
-    rgb, gray, alpha, bg_color = _prepare_input(src, params.contrast_boost)
+    rgb, gray, alpha, bg_color = _prepare_input(src, params)
     w, h = rgb.size
 
     cell = float(dot_size_override if dot_size_override is not None else params.dot_size)
@@ -266,6 +303,8 @@ def render_halftone(
                         signal = 0.0
                     elif signal > 1:
                         signal = 1.0
+                    # Scale by gradient_intensity
+                    signal = signal * params.gradient_intensity
                     # Modulate by the soft mask so fringes fade gracefully.
                     coverage = signal * (a / 255.0)
                     if coverage >= MIN_COVERAGE:
