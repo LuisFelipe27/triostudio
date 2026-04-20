@@ -1,39 +1,67 @@
-{% load i18n %}
-<div class="ts-canvas-content">
-    <div class="ts-canvas-original">
-        <span class="ts-canvas-tag">Original</span>
-        <img src="{{ job.original.url }}" alt="original">
+﻿{% load i18n %}
+<div class="ts-stage" id="ts-stage"
+     data-job-id="{{ job.pk }}"
+     data-original-url="{{ job.original.url }}"
+     data-preview-url="{% if job.preview %}{{ job.preview.url }}?v={{ job.modified|date:'U' }}{% endif %}"
+     data-delete-url="{% url 'halftone:delete_job' job.pk %}"
+     data-params-url="{% url 'halftone:update_params' job.pk %}"
+     data-export-url="{% url 'halftone:export_job' job.pk %}"
+     data-status-url="{% url 'halftone:job_status' job.pk %}">
+
+    <div class="ts-compare">
+        <div class="ts-compare-pane">
+            <span class="ts-compare-label">Original</span>
+            <img class="ts-stage-img" id="ts-img-original"
+                 src="{{ job.original.url }}" alt="original">
+        </div>
+        <div class="ts-compare-pane ts-checker">
+            <span class="ts-compare-label">Halftone</span>
+            <img class="ts-stage-img" id="ts-img-result"
+                 src="{% if job.preview %}{{ job.preview.url }}?v={{ job.modified|date:'U' }}{% else %}{{ job.original.url }}{% endif %}"
+                 alt="halftone result">
+        </div>
     </div>
-    <div class="ts-canvas-preview ts-checker"
-         id="ts-preview-pane"
-         hx-get="{% url 'halftone:job_status' job.pk %}?mode=preview"
-         hx-trigger="every 1500ms"
-         hx-target="#ts-status"
-         hx-swap="innerHTML">
-        <span class="ts-canvas-tag">Halftone</span>
-        {% if job.preview %}
-            <img src="{{ job.preview.url }}?v={{ job.modified|date:'U' }}" alt="halftone preview" id="ts-preview-img">
-        {% else %}
-            <div class="ts-empty">Procesando vista previa…</div>
-        {% endif %}
-    </div>
+
+    <span id="ts-poller" hidden
+          hx-get="{% url 'halftone:job_status' job.pk %}?mode=preview"
+          hx-trigger="every 1500ms [shouldPoll()]"
+          hx-target="#ts-status"
+          hx-swap="innerHTML"></span>
 </div>
 
-<!-- Re-bind the params form to this job & re-enable the export button -->
 <script>
 (function () {
+    var stage = document.getElementById('ts-stage');
+
     var paramsForm = document.getElementById('ts-params-form');
     if (paramsForm) {
-        paramsForm.setAttribute('hx-post', '{% url "halftone:update_params" job.pk %}');
-        if (window.htmx) htmx.process(paramsForm);
+        paramsForm.setAttribute('hx-post', stage.dataset.paramsUrl);
+        htmx.process(paramsForm);
     }
+
+    var applyBtn = document.getElementById('ts-apply-btn');
+    if (applyBtn) {
+        applyBtn.disabled = false;
+        applyBtn.dataset.paramsUrl = stage.dataset.paramsUrl;
+    }
+
     var exportBtn = document.getElementById('ts-export-btn');
     if (exportBtn) {
         exportBtn.disabled = false;
-        exportBtn.setAttribute('hx-post', '{% url "halftone:export_job" job.pk %}');
-        exportBtn.setAttribute('hx-target', '#ts-status');
-        exportBtn.setAttribute('hx-swap', 'innerHTML');
-        if (window.htmx) htmx.process(exportBtn);
+        exportBtn.dataset.exportUrl = stage.dataset.exportUrl;
     }
+
+    var delBtn = document.getElementById('ts-delete-btn');
+    if (delBtn) {
+        delBtn.setAttribute('hx-post', stage.dataset.deleteUrl);
+        delBtn.setAttribute('hx-target', '#ts-canvas');
+        delBtn.setAttribute('hx-swap', 'innerHTML');
+        htmx.process(delBtn);
+    }
+
+    var poller = document.getElementById('ts-poller');
+    if (poller) htmx.process(poller);
+
+    if (window.TrioStudio) window.TrioStudio.onStageReady();
 })();
 </script>

@@ -1,40 +1,18 @@
-{% load i18n %}
+﻿{% load i18n %}
 {% if job.status == 'done' %}
-    <div class="ts-status ts-status--ok">
-        ✓ Vista previa actualizada
-    </div>
-    {# Refresh the preview image cache-busted, swap inline. #}
+    <div class="ts-status ts-status--ok">&#10003; Vista previa actualizada</div>
     <script>
     (function () {
-        var img = document.getElementById('ts-preview-img');
         var url = '{{ job.preview.url }}?v={{ job.modified|date:"U" }}';
-        if (img) {
-            img.src = url;
-        } else {
-            var pane = document.getElementById('ts-preview-pane');
-            if (pane) {
-                var empty = pane.querySelector('.ts-empty');
-                if (empty) empty.remove();
-                var tag = pane.querySelector('.ts-canvas-tag');
-                var im = document.createElement('img');
-                im.id = 'ts-preview-img';
-                im.alt = 'halftone preview';
-                im.src = url;
-                pane.appendChild(im);
-            }
-        }
+        var img = document.getElementById('ts-img-result');
+        if (img) img.src = url;
+        if (window.TrioStudio) window.TrioStudio.onPreviewReady();
     })();
     </script>
 {% elif job.status == 'error' %}
-    <div class="ts-status ts-status--err">
-        ✗ Error: {{ job.error_message }}
-    </div>
+    <div class="ts-status ts-status--err">&#10007; Error: {{ job.error_message }}</div>
 {% else %}
-    <div class="ts-status ts-status--busy"
-         hx-get="{% url 'halftone:job_status' job.pk %}?mode=preview"
-         hx-trigger="load delay:900ms"
-         hx-target="#ts-status"
-         hx-swap="innerHTML">
-        <span class="ts-spinner"></span> Generando halftone…
+    <div class="ts-status ts-status--busy">
+        <span class="ts-spinner"></span> Generando halftone&hellip;
     </div>
 {% endif %}

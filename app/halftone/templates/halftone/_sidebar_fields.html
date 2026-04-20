@@ -1,116 +1,96 @@
-{% load i18n %}
+﻿{% load i18n %}
 
-<!-- ============= COLOR ============= -->
+<!-- COLOR -->
 <section class="ts-panel">
-    <header class="ts-panel-title">COLOR</header>
-
+    <header class="ts-panel-title">
+        <span>COLOR</span>
+        <span class="ts-help" title="Color de la tinta y del fondo">?</span>
+    </header>
     <div class="ts-field ts-field--row">
-        <label for="{{ form.knockout_color.id_for_label }}">
-            Knockout Color
-            <span class="ts-help" title="Color de la tinta (puntos)">?</span>
-        </label>
-        <label class="ts-toggle">
-            {{ form.knockout_enable }} Enable
-        </label>
+        <label for="{{ form.knockout_color.id_for_label }}">Color Knockout</label>
+        <label class="ts-toggle">{{ form.knockout_enable }} <span>Habilitar</span></label>
     </div>
     <div class="ts-color-row">
-        <div class="ts-swatch" style="background: {{ form.knockout_color.value|default:'#000000' }}"></div>
+        <div class="ts-swatch" style="background:{{ form.knockout_color.value|default:'#000000' }}"></div>
         {{ form.knockout_color }}
-        <button type="button" class="ts-eyedrop" tabindex="-1">⛶</button>
     </div>
-
-    <div class="ts-field">
-        <label for="{{ form.bg_color.id_for_label }}">BG Color</label>
-    </div>
+    <div class="ts-field"><label for="{{ form.bg_color.id_for_label }}">Color de fondo</label></div>
     <div class="ts-color-row">
-        <div class="ts-swatch" style="background: {{ form.bg_color.value|default:'#FFFFFF' }}"></div>
+        <div class="ts-swatch" style="background:{{ form.bg_color.value|default:'#FFFFFF' }}"></div>
         {{ form.bg_color }}
-        <button type="button" class="ts-eyedrop" tabindex="-1">⛶</button>
     </div>
 </section>
 
-<!-- ============= HALFTONE PATTERN ============= -->
+<!-- TRAMA DE SEMITONO -->
 <section class="ts-panel">
-    <header class="ts-panel-title">HALFTONE PATTERN <span class="ts-chev">⌃</span></header>
-
+    <header class="ts-panel-title">
+        <span>TRAMA DE SEMITONO</span>
+        <span class="ts-help" title="Forma, tama&ntilde;o y &aacute;ngulo del punto">?</span>
+    </header>
     <div class="ts-field">
-        <label>Dot Shape</label>
+        <label>Forma del punto</label>
         <div class="ts-shape-toggle" role="radiogroup">
             {% for value, label in form.dot_shape.field.choices %}
-                <label class="ts-shape-opt {% if form.dot_shape.value == value %}is-on{% endif %}">
-                    <input type="radio" name="{{ form.dot_shape.name }}" value="{{ value }}"
-                           {% if form.dot_shape.value == value %}checked{% endif %}>
-                    {% if value == 'circle' %}●{% else %}╱╱{% endif %}
+                <label class="ts-shape-opt {% if form.dot_shape.value == value %}is-on{% endif %}" title="{{ label }}">
+                    <input type="radio" name="{{ form.dot_shape.name }}" value="{{ value }}" {% if form.dot_shape.value == value %}checked{% endif %}>
+                    {% if value == 'circle' %}&bull;{% else %}&#9641;{% endif %}
                 </label>
             {% endfor %}
         </div>
     </div>
-
     <div class="ts-field">
         <div class="ts-row-between">
-            <label for="{{ form.dot_size.id_for_label }}">Dot Size</label>
-            <output data-for="{{ form.dot_size.id_for_label }}" data-unit=" px" data-decimals="1">
-                {{ form.dot_size.value|default:"10.0" }} px
-            </output>
+            <label for="{{ form.dot_size.id_for_label }}">Tama&ntilde;o del punto</label>
+            <output data-for="{{ form.dot_size.id_for_label }}" data-unit=" px" data-decimals="1">{{ form.dot_size.value|default:"6.0" }} px</output>
         </div>
         {{ form.dot_size }}
     </div>
-
     <div class="ts-field">
         <div class="ts-row-between">
-            <label for="{{ form.dot_angle.id_for_label }}">Dot Angle</label>
-            <output data-for="{{ form.dot_angle.id_for_label }}" data-unit="°" data-decimals="1">
-                {{ form.dot_angle.value|default:"45.0" }}°
-            </output>
+            <label for="{{ form.dot_angle.id_for_label }}">&Aacute;ngulo del punto</label>
+            <output data-for="{{ form.dot_angle.id_for_label }}" data-unit="&deg;" data-decimals="1">{{ form.dot_angle.value|default:"45.0" }}&deg;</output>
         </div>
         {{ form.dot_angle }}
     </div>
 </section>
 
-<!-- ============= SIZE SETTINGS ============= -->
+<!-- TAMA&#209;O -->
 <section class="ts-panel">
-    <header class="ts-panel-title">SIZE SETTINGS <span class="ts-chev">⌃</span></header>
-
+    <header class="ts-panel-title">
+        <span>TAMA&Ntilde;O</span>
+        <span class="ts-help" title="Medidas de impresi&oacute;n y resoluci&oacute;n de salida">?</span>
+    </header>
     <div class="ts-field">
         <div class="ts-row-between">
-            <label for="{{ form.print_width_cm.id_for_label }}">Print Width</label>
-            <output data-for="{{ form.print_width_cm.id_for_label }}" data-unit="cm" data-decimals="1">
-                {{ form.print_width_cm.value|default:"25.0" }}cm
-            </output>
+            <label for="{{ form.print_width_cm.id_for_label }}">Ancho de impresi&oacute;n</label>
+            <output data-for="{{ form.print_width_cm.id_for_label }}" data-unit="cm" data-decimals="1">{{ form.print_width_cm.value|default:"25.0" }}cm</output>
         </div>
         {{ form.print_width_cm }}
-        <small class="ts-hint">Height auto adapts to the image ratio.</small>
+        <small class="ts-hint">La altura se adapta autom&aacute;ticamente a la imagen.</small>
     </div>
-
     <div class="ts-field">
-        <label>Export DPI</label>
+        <label>DPI de exportaci&oacute;n</label>
         <div class="ts-dpi-toggle">
-            <label class="ts-dpi-opt {% if form.export_dpi.value|stringformat:'s' == '300' %}is-on{% endif %}">
-                <input type="radio" name="{{ form.export_dpi.name }}" value="300"
-                       {% if form.export_dpi.value|stringformat:"s" == "300" %}checked{% endif %}> 300
-            </label>
-            <label class="ts-dpi-opt {% if form.export_dpi.value|stringformat:'s' == '450' %}is-on{% endif %}">
-                <input type="radio" name="{{ form.export_dpi.name }}" value="450"
-                       {% if form.export_dpi.value|stringformat:"s" == "450" %}checked{% endif %}> 450
-            </label>
-            <label class="ts-dpi-opt {% if form.export_dpi.value|stringformat:'s' == '600' %}is-on{% endif %}">
-                <input type="radio" name="{{ form.export_dpi.name }}" value="600"
-                       {% if form.export_dpi.value|stringformat:"s" == "600" %}checked{% endif %}> 600
-            </label>
+            <label class="ts-dpi-opt {% if form.export_dpi.value|stringformat:'s' == '300' %}is-on{% endif %}"><input type="radio" name="{{ form.export_dpi.name }}" value="300" {% if form.export_dpi.value|stringformat:"s" == "300" %}checked{% endif %}> 300</label>
+            <label class="ts-dpi-opt {% if form.export_dpi.value|stringformat:'s' == '450' %}is-on{% endif %}"><input type="radio" name="{{ form.export_dpi.name }}" value="450" {% if form.export_dpi.value|stringformat:"s" == "450" %}checked{% endif %}> 450</label>
+            <label class="ts-dpi-opt {% if form.export_dpi.value|stringformat:'s' == '600' %}is-on{% endif %}"><input type="radio" name="{{ form.export_dpi.name }}" value="600" {% if form.export_dpi.value|stringformat:"s" == "600" %}checked{% endif %}> 600</label>
         </div>
     </div>
 </section>
 
-<!-- ============= ADVANCED ============= -->
-<section class="ts-panel ts-panel--advanced">
-    <header class="ts-panel-title ts-panel-title--mini">› ADVANCED</header>
-    <div class="ts-field">
-        <div class="ts-row-between">
-            <label for="{{ form.contrast_boost.id_for_label }}">Contrast</label>
-            <output data-for="{{ form.contrast_boost.id_for_label }}" data-unit="" data-decimals="2">
-                {{ form.contrast_boost.value|default:"1.20" }}
-            </output>
+<!-- AVANZADO -->
+<section class="ts-panel ts-panel--advanced" id="ts-advanced-panel">
+    <header class="ts-panel-title ts-panel-title--mini ts-collapsible" data-target="ts-advanced-body">
+        <span>&rsaquo; AVANZADO</span>
+        <span class="ts-chev" id="ts-advanced-chev">&#9660;</span>
+    </header>
+    <div id="ts-advanced-body" hidden>
+        <div class="ts-field">
+            <div class="ts-row-between">
+                <label for="{{ form.contrast_boost.id_for_label }}">Contraste</label>
+                <output data-for="{{ form.contrast_boost.id_for_label }}" data-unit="" data-decimals="2">{{ form.contrast_boost.value|default:"1.20" }}</output>
+            </div>
+            {{ form.contrast_boost }}
         </div>
-        {{ form.contrast_boost }}
     </div>
 </section>

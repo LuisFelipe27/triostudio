@@ -1,16 +1,22 @@
-"""
-TrioStudio - Halftone DTF processing.
+﻿"""
+TrioStudio - Halftone DTF processing (v2: color + auto background removal).
 
 Pure-Pillow halftone renderer optimised for Direct-To-Film (DTF) output:
 
-* Respects the source alpha channel: transparent pixels stay transparent
-  in the result, so the white-ink layer "breathes" on the garment.
-* Applies an automatic curve / contrast pre-pass so blacks become deep
-  and dot edges remain crisp.
-* Generates dots whose area is proportional to local ink coverage,
-  rotated by the user-selected screen angle (classic 45° default).
-* Two screen geometries: round dots (`circle`) or parallel ruling
-  (`lines`) for more textured looks.
+* **Automatic background removal**: when the source has no real alpha
+  channel (fully opaque), we infer a soft mask by measuring how similar
+  each pixel is to the dominant corner colour. Dark or bright flat
+  backgrounds disappear cleanly.
+* **Color preservation**: each dot is painted with the RGB sampled from
+  the original image at the cell centre, so the blue aura stays blue,
+  skin stays skin, etc. A "single-ink" override is available.
+* **Transparency is sacred**: the final alpha is multiplied with the
+  inferred mask so the DTF white-ink layer breathes correctly.
+* **Curve pre-pass**: autocontrast + gentle contrast boost on luminance
+  so blacks are deep and dot coverage is well defined.
+* Dots whose area is proportional to local ink coverage, rotated by the
+  user-selected screen angle (classic 45Â° default). Two geometries:
+  round dots (`circle`) or parallel ruling (`lines`).
 """
 from __future__ import annotations
 
@@ -19,7 +25,7 @@ from dataclasses import dataclass
 from io import BytesIO
 from typing import Optional, Tuple
 
-from PIL import Image, ImageChops, ImageDraw, ImageEnhance, ImageOps
+from PIL import Image, ImageChops, ImageDraw, ImageEnhance, ImageFilter, ImageOps
 
 # Pillow >= 9.1 moved resampling constants under Image.Resampling.
 try:
@@ -32,8 +38,14 @@ except AttributeError:  # pragma: no cover - older Pillow
 # ---------------------------------------------------------------------------
 
 CM_PER_INCH = 2.54
-PREVIEW_MAX_WIDTH = 900  # px - keeps the live preview snappy
-MIN_DOT_PX = 2.0         # below this dots collapse to noise
+PREVIEW_MAX_WIDTH = 900     # px - keeps the live preview snappy
+MIN_DOT_PX = 2.0            # below this dots collapse to noise
+
+# Auto background removal thresholds (in 0..255 colour distance).
+BG_TOL_LOW = 28.0            # below this -> fully background (alpha=0)
+BG_TOL_HIGH = 70.0           # above this -> fully subject    (alpha=255)
+MIN_COVERAGE = 0.06          # below this no dot is drawn
+MIN_ALPHA = 40               # below this the cell is skipped entirely
 
 
 # ---------------------------------------------------------------------------
@@ -61,8 +73,9 @@ def cm_to_px(cm: float, dpi: int) -> int:
 
 @dataclass
 class HalftoneParams:
-    knockout_enable: bool = True
-    knockout_color: str = '#000000'
+    knockout_enable: bool = True        # transparent background (DTF)
+    knockout_color: str = '#000000'     # single-ink override colour
+    use_single_ink: bool = False        # if True, paint every dot with knockout_color
     bg_color: str = '#FFFFFF'
     dot_shape: str = 'circle'
     dot_size: float = 10.0
@@ -76,6 +89,9 @@ class HalftoneParams:
         return cls(
             knockout_enable=job.knockout_enable,
             knockout_color=job.knockout_color,
+            # Default: preserve source colours. Power users can flip this
+            # from the "Advanced" panel if we ever expose it.
+            use_single_ink=False,
             bg_color=job.bg_color,
             dot_shape=job.dot_shape,
             dot_size=float(job.dot_size),
@@ -87,46 +103,119 @@ class HalftoneParams:
 
 
 # ---------------------------------------------------------------------------
-# Core algorithm
+# Background detection
+# ---------------------------------------------------------------------------
+
+def _corner_bg_color(rgb: Image.Image) -> Tuple[int, int, int]:
+    """Estimate the dominant background colour from the four corners."""
+    w, h = rgb.size
+    sample = 6
+    patches = [
+        rgb.crop((0, 0, sample, sample)),
+        rgb.crop((w - sample, 0, w, sample)),
+        rgb.crop((0, h - sample, sample, h)),
+        rgb.crop((w - sample, h - sample, w, h)),
+    ]
+    r = g = b = 0
+    for p in patches:
+        px = p.resize((1, 1), _LANCZOS).getpixel((0, 0))
+        r += px[0]
+        g += px[1]
+        b += px[2]
+    n = len(patches)
+    return (r // n, g // n, b // n)
+
+
+def _build_auto_alpha(rgb: Image.Image, bg: Tuple[int, int, int]) -> Image.Image:
+    """Return an L-mode mask: 0 = background, 255 = subject.
+
+    Uses per-channel absolute difference from the background colour with
+    a soft threshold so edges stay smooth.
+    """
+    br, bg_g, bb = bg
+    r, g, b = rgb.split()
+    dr = ImageChops.difference(r, Image.new('L', rgb.size, br))
+    dg = ImageChops.difference(g, Image.new('L', rgb.size, bg_g))
+    db = ImageChops.difference(b, Image.new('L', rgb.size, bb))
+    diff = ImageChops.lighter(ImageChops.lighter(dr, dg), db)
+
+    # Soft threshold LUT: BG_TOL_LOW..BG_TOL_HIGH -> 0..255
+    span = max(1.0, BG_TOL_HIGH - BG_TOL_LOW)
+    lut = []
+    for i in range(256):
+        v = (i - BG_TOL_LOW) / span
+        if v < 0:
+            v = 0.0
+        elif v > 1:
+            v = 1.0
+        lut.append(int(round(v * 255)))
+    mask = diff.point(lut)
+    # Morphological opening: erosion kills 1-px sparkles, dilation
+    # restores the true silhouette. Then a tiny blur for soft edges.
+    mask = mask.filter(ImageFilter.MinFilter(3))
+    mask = mask.filter(ImageFilter.MaxFilter(3))
+    mask = mask.filter(ImageFilter.GaussianBlur(radius=0.8))
+    return mask
+
+
+def _resolve_alpha(rgba: Image.Image) -> Tuple[Image.Image, Tuple[int, int, int]]:
+    """Return (mask, bg_color). Uses the source alpha when it already
+    carries information, otherwise auto-detects the background."""
+    alpha = rgba.split()[-1]
+    rgb = rgba.convert('RGB')
+    extrema = alpha.getextrema()  # (min, max)
+    if extrema and extrema[0] < 245:
+        # Source has real transparency - corner sampling is pointless, use
+        # the average of fully-transparent pixels as a neutral bg reference.
+        return alpha, (0, 0, 0)
+    bg = _corner_bg_color(rgb)
+    return _build_auto_alpha(rgb, bg), bg
+
+
+# ---------------------------------------------------------------------------
+# Preprocessing
 # ---------------------------------------------------------------------------
 
 def _prepare_input(img: Image.Image, contrast_boost: float):
-    """Return (rgba, gray, alpha) with autocontrast / curve applied."""
+    """Return (rgb, gray, alpha, bg_color) all aligned, with curves applied."""
     rgba = img.convert('RGBA')
-    alpha = rgba.split()[-1]
+    alpha, bg_color = _resolve_alpha(rgba)
 
-    # Drop alpha for tonal work, then re-apply mask at the end.
     rgb = rgba.convert('RGB')
-    gray = rgb.convert('L')
 
-    # Auto curves: stretch tonal range so blacks stay punchy.
+    gray = rgb.convert('L')
     gray = ImageOps.autocontrast(gray, cutoff=2)
     if contrast_boost and abs(contrast_boost - 1.0) > 1e-3:
         gray = ImageEnhance.Contrast(gray).enhance(contrast_boost)
 
-    return rgba, gray, alpha
+    # Mild saturation boost so colours stay punchy after screening.
+    rgb = ImageEnhance.Color(rgb).enhance(1.15)
 
+    return rgb, gray, alpha, bg_color
+
+
+# ---------------------------------------------------------------------------
+# Canvas
+# ---------------------------------------------------------------------------
 
 def _build_canvas(size, params: HalftoneParams) -> Image.Image:
     if params.knockout_enable:
-        # DTF best practice: keep background fully transparent.
         return Image.new('RGBA', size, (0, 0, 0, 0))
     bg = hex_to_rgb(params.bg_color)
     return Image.new('RGBA', size, bg + (255,))
 
+
+# ---------------------------------------------------------------------------
+# Core algorithm
+# ---------------------------------------------------------------------------
 
 def render_halftone(
     src: Image.Image,
     params: HalftoneParams,
     dot_size_override: Optional[float] = None,
 ) -> Image.Image:
-    """Render a halftone version of `src` using `params`.
-
-    `dot_size_override` lets the preview pipeline reuse the same routine
-    while scaling the cell size to the preview resolution.
-    """
-    rgba, gray, alpha = _prepare_input(src, params.contrast_boost)
-    w, h = rgba.size
+    rgb, gray, alpha, bg_color = _prepare_input(src, params.contrast_boost)
+    w, h = rgb.size
 
     cell = float(dot_size_override if dot_size_override is not None else params.dot_size)
     cell = max(MIN_DOT_PX, cell)
@@ -134,14 +223,22 @@ def render_halftone(
     canvas = _build_canvas((w, h), params)
     draw = ImageDraw.Draw(canvas)
 
-    ink_rgb = hex_to_rgb(params.knockout_color)
+    ink_override = hex_to_rgb(params.knockout_color) if params.use_single_ink else None
     angle_rad = math.radians(params.dot_angle)
     cos_a, sin_a = math.cos(angle_rad), math.sin(angle_rad)
 
     gray_px = gray.load()
+    rgb_px = rgb.load()
     alpha_px = alpha.load()
 
-    # Iterate over a rotated grid that fully covers the image.
+    # Luminance of the background decides the "ink direction":
+    #   dark bg (e.g. black neon poster) -> brighter = more ink
+    #   light bg (e.g. white paper)       -> darker  = more ink
+    bg_lum = (bg_color[0] + bg_color[1] + bg_color[2]) / 3.0
+    light_on_dark = bg_lum < 128
+    inv_bg = max(1.0, 255.0 - bg_lum)
+    inv_light = max(1.0, bg_lum)
+
     diag = int(math.hypot(w, h)) + int(cell) * 2
     half_cell = cell / 2.0
     cx_img, cy_img = w / 2.0, h / 2.0
@@ -150,7 +247,6 @@ def render_halftone(
     while u < diag:
         v = -diag
         while v < diag:
-            # Cell centre mapped from rotated (u, v) into image (x, y).
             uu = u + half_cell
             vv = v + half_cell
             cx = uu * cos_a - vv * sin_a + cx_img
@@ -159,11 +255,26 @@ def render_halftone(
             ix, iy = int(cx), int(cy)
             if 0 <= ix < w and 0 <= iy < h:
                 a = alpha_px[ix, iy]
-                if a > 8:  # respect source transparency
+                if a >= MIN_ALPHA:
                     luminance = gray_px[ix, iy]
-                    coverage = (255 - luminance) / 255.0
-                    if coverage > 0.02:
-                        ink = ink_rgb + (int(a),)
+                    if light_on_dark:
+                        # Brighter than bg means more ink.
+                        signal = (luminance - bg_lum) / inv_bg
+                    else:
+                        signal = (bg_lum - luminance) / inv_light
+                    if signal < 0:
+                        signal = 0.0
+                    elif signal > 1:
+                        signal = 1.0
+                    # Modulate by the soft mask so fringes fade gracefully.
+                    coverage = signal * (a / 255.0)
+                    if coverage >= MIN_COVERAGE:
+                        if ink_override is not None:
+                            rr, gg, bb = ink_override
+                        else:
+                            px = rgb_px[ix, iy]
+                            rr, gg, bb = px[0], px[1], px[2]
+                        ink = (rr, gg, bb, 255)
                         if params.dot_shape == 'lines':
                             line_len = cell * 1.05
                             line_w = max(1, int(round(coverage * cell)))
@@ -174,7 +285,6 @@ def render_halftone(
                                 fill=ink, width=line_w,
                             )
                         else:
-                            # area = pi r^2 = coverage * cell^2
                             r = cell * math.sqrt(coverage / math.pi)
                             draw.ellipse(
                                 [cx - r, cy - r, cx + r, cy + r],
@@ -183,11 +293,23 @@ def render_halftone(
             v += cell
         u += cell
 
-    # Final alpha mask: never paint where the source was transparent.
+    # Final alpha: respect the auto/source mask so the DTF background
+    # stays fully transparent no matter what.
     out_alpha = canvas.split()[-1]
     final_alpha = ImageChops.multiply(out_alpha, alpha)
     canvas.putalpha(final_alpha)
     return canvas
+
+
+def render_mask(src: Image.Image) -> Image.Image:
+    """Return the subject mask as an RGBA image for the 'Máscara' tab."""
+    rgba = src.convert('RGBA')
+    alpha, _ = _resolve_alpha(rgba)
+    # Compose white-on-transparent so the user sees the silhouette.
+    out = Image.new('RGBA', rgba.size, (0, 0, 0, 0))
+    white = Image.new('RGBA', rgba.size, (255, 255, 255, 255))
+    out.paste(white, (0, 0), alpha)
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -195,7 +317,6 @@ def render_halftone(
 # ---------------------------------------------------------------------------
 
 def render_preview(src: Image.Image, params: HalftoneParams) -> Image.Image:
-    """Fast preview for the studio canvas (HTMX live update)."""
     img = src
     if img.width > PREVIEW_MAX_WIDTH:
         scale = PREVIEW_MAX_WIDTH / img.width
@@ -208,7 +329,6 @@ def render_preview(src: Image.Image, params: HalftoneParams) -> Image.Image:
 
 
 def render_export(src: Image.Image, params: HalftoneParams) -> Image.Image:
-    """Print-ready halftone at the requested DPI / print width."""
     target_w = cm_to_px(params.print_width_cm, params.export_dpi)
     if target_w != src.width:
         scale = target_w / src.width

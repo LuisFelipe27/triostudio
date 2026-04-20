@@ -1,18 +1,23 @@
-{% load i18n %}
+﻿{% load i18n %}
 {% if job.status == 'done' and job.export %}
-    <div class="ts-status ts-status--ok">
-        ✓ Listo · <a class="ts-link" href="{% url 'halftone:download_export' job.pk %}">Descargar PNG</a>
-    </div>
+<div class="ts-status ts-status--ok">
+    &#10003; Listo &middot;
+    <a class="ts-link ts-download-link" href="{% url 'halftone:download_export' job.pk %}">Descargar PNG</a>
+</div>
+<script>
+(function () {
+    var a = document.querySelector('.ts-download-link');
+    if (a) { var t = document.createElement('a'); t.href = a.href; t.download = ''; t.style.display='none'; document.body.appendChild(t); t.click(); document.body.removeChild(t); }
+})();
+</script>
 {% elif job.status == 'error' %}
-    <div class="ts-status ts-status--err">
-        ✗ Error: {{ job.error_message }}
-    </div>
+<div class="ts-status ts-status--err">&#10007; Error: {{ job.error_message }}</div>
 {% else %}
-    <div class="ts-status ts-status--busy"
-         hx-get="{% url 'halftone:job_status' job.pk %}?mode=export"
-         hx-trigger="load delay:1500ms"
-         hx-target="#ts-status"
-         hx-swap="innerHTML">
-        <span class="ts-spinner"></span> Renderizando exportación a {{ job.export_dpi }} DPI…
-    </div>
+<div class="ts-status ts-status--busy"
+     hx-get="{% url 'halftone:job_status' job.pk %}?mode=export"
+     hx-trigger="load delay:1500ms"
+     hx-target="#ts-status"
+     hx-swap="innerHTML">
+    <span class="ts-spinner"></span> Renderizando a {{ job.export_dpi }} DPI&hellip;
+</div>
 {% endif %}

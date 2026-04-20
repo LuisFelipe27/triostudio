@@ -71,7 +71,7 @@ class HalftoneJob(models.Model):
     dot_shape = models.CharField(
         _('Forma del punto'), max_length=10, choices=SHAPE_CHOICES, default=SHAPE_CIRCLE
     )
-    dot_size = models.FloatField(_('Tamaño del punto (px)'), default=10.0)
+    dot_size = models.FloatField(_('Tamaño del punto (px)'), default=6.0)
     dot_angle = models.FloatField(_('Ángulo del punto (°)'), default=45.0)
 
     print_width_cm = models.FloatField(_('Ancho de impresión (cm)'), default=25.0)

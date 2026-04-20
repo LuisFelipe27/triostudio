@@ -151,3 +151,45 @@ def job_meta(request, job_id):
         'export_url': reverse('halftone:download_export', args=[job.pk]) if job.export else None,
         'error': job.error_message,
     })
+
+
+@login_required
+def mask_image(request, job_id):
+    """Render the subject mask on-the-fly and stream it as PNG."""
+    from io import BytesIO
+    from PIL import Image
+    from django.http import HttpResponse
+
+    from app.halftone import processing
+
+    job = get_object_or_404(HalftoneJob, pk=job_id)
+    with Image.open(job.original.path) as src:
+        src.load()
+        # Downscale for the preview pane.
+        if src.width > processing.PREVIEW_MAX_WIDTH:
+            scale = processing.PREVIEW_MAX_WIDTH / src.width
+            src = src.resize(
+                (processing.PREVIEW_MAX_WIDTH, max(1, int(src.height * scale))),
+                processing._LANCZOS,
+            )
+        mask = processing.render_mask(src)
+    buf = BytesIO()
+    mask.save(buf, format='PNG', optimize=True)
+    return HttpResponse(buf.getvalue(), content_type='image/png')
+
+
+@login_required
+@require_POST
+def delete_job(request, job_id):
+    """Remove a job and its media files; returns the upload dropzone."""
+    job = get_object_or_404(HalftoneJob, pk=job_id)
+    for field in ('original', 'preview', 'export'):
+        f = getattr(job, field, None)
+        if f:
+            try:
+                f.delete(save=False)
+            except Exception:
+                pass
+    job.delete()
+    upload_form = HalftoneUploadForm()
+    return render(request, 'halftone/_dropzone.html', {'upload_form': upload_form})

@@ -1,0 +1,16 @@
+{% load i18n %}
+<form id="ts-upload-form"
+      hx-post="{% url 'halftone:upload' %}"
+      hx-encoding="multipart/form-data"
+      hx-target="#ts-canvas"
+      hx-swap="innerHTML"
+      hx-indicator="#ts-upload-spinner">
+    {% csrf_token %}
+    <label class="ts-dropzone" for="id_original">
+        <span class="ts-dz-icon">⤴</span>
+        <span class="ts-dz-title">Arrastra una imagen o haz clic</span>
+        <span class="ts-dz-hint">PNG / JPG · hasta 20&nbsp;MB · se recomienda fondo plano o transparente</span>
+        {{ upload_form.original }}
+        <span id="ts-upload-spinner" class="ts-spinner htmx-indicator"></span>
+    </label>
+</form>
