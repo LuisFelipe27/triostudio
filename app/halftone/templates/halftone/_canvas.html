@@ -19,6 +19,7 @@
             <img class="ts-stage-img" id="ts-img-result"
                  src="{% if job.preview %}{{ job.preview.url }}?v={{ job.modified|date:'U' }}{% else %}{{ job.original.url }}{% endif %}"
                  alt="halftone result">
+            <div class="ts-fabric-overlay" id="ts-fabric-overlay" aria-hidden="true"></div>
         </div>
     </div>
 

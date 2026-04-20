@@ -18,8 +18,10 @@
 (function () {
     var a = document.getElementById('ts-canvas-actions');
     var z = document.getElementById('ts-zoombar');
+    var f = document.getElementById('ts-fabricbar');
     if (a) a.hidden = true;
     if (z) z.hidden = true;
+    if (f) f.hidden = true;
     var status = document.getElementById('ts-status');
     if (status) { status.className = 'ts-status ts-status--idle'; status.innerHTML = ''; }
     var applyBtn = document.getElementById('ts-apply-btn');

@@ -561,5 +561,113 @@ input[type=range]::-moz-range-thumb {
 .ts-adv-sub > div { padding: 10px; }
 .ts-chev { font-size: 10px; color: var(--muted); }
 
+/* ================== FABRIC SIMULATOR ================== */
+
+/* Overlay rendered on top of the halftone image */
+.ts-fabric-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border-radius: inherit;
+    opacity: 0;
+    transition: opacity .25s ease;
+    mix-blend-mode: multiply;
+}
+
+/* Cotton: visible woven grid, warm linen tones */
+.ts-fabric-overlay.is-cotton {
+    opacity: 1;
+    background-image:
+        repeating-linear-gradient(
+            0deg,
+            rgba(160, 130, 90, .22) 0px,
+            rgba(160, 130, 90, .22) 1px,
+            transparent 1px,
+            transparent 5px
+        ),
+        repeating-linear-gradient(
+            90deg,
+            rgba(160, 130, 90, .22) 0px,
+            rgba(160, 130, 90, .22) 1px,
+            transparent 1px,
+            transparent 5px
+        ),
+        repeating-linear-gradient(
+            45deg,
+            rgba(210, 190, 150, .08) 0px,
+            rgba(210, 190, 150, .08) 2px,
+            transparent 2px,
+            transparent 8px
+        );
+    background-size: 5px 5px, 5px 5px, 8px 8px;
+}
+
+/* Polyester: tight microfibre grid, cool neutral tones */
+.ts-fabric-overlay.is-polyester {
+    opacity: 1;
+    background-image:
+        repeating-linear-gradient(
+            0deg,
+            rgba(180, 185, 210, .18) 0px,
+            rgba(180, 185, 210, .18) 1px,
+            transparent 1px,
+            transparent 3px
+        ),
+        repeating-linear-gradient(
+            90deg,
+            rgba(180, 185, 210, .18) 0px,
+            rgba(180, 185, 210, .18) 1px,
+            transparent 1px,
+            transparent 3px
+        ),
+        repeating-linear-gradient(
+            135deg,
+            rgba(220, 225, 240, .10) 0px,
+            rgba(220, 225, 240, .10) 1px,
+            transparent 1px,
+            transparent 6px
+        );
+    background-size: 3px 3px, 3px 3px, 6px 6px;
+}
+
+/* Fabric selector bar */
+.ts-fabricbar {
+    position: absolute;
+    left: 50%;
+    top: 25px;          /* just above the zoombar */
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 4px 10px;
+    box-shadow: var(--shadow);
+    z-index: 5;
+    white-space: nowrap;
+}
+.ts-fabricbar[hidden] { display: none; }
+.ts-fabricbar-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: .04em;
+    margin-right: 2px;
+}
+.ts-fab-btn {
+    background: transparent;
+    border: none;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--muted);
+    cursor: pointer;
+    transition: background .12s, color .12s;
+}
+.ts-fab-btn:hover { color: var(--ink); background: #f1f5f9; }
+.ts-fab-btn.is-on { background: var(--ink); color: #fff; }
+
 /* Responsive tweaks so nothing breaks on smaller viewports */
 @media (max-width: 1100px) {

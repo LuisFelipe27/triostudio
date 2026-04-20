@@ -173,6 +173,22 @@
     }
 
     document.addEventListener('click', function (e) {
+        // Fabric simulator toggle
+        var fabBtn = e.target.closest('.ts-fab-btn');
+        if (fabBtn) {
+            var fabric = fabBtn.dataset.fabric;
+            document.querySelectorAll('.ts-fab-btn').forEach(function (b) {
+                b.classList.toggle('is-on', b === fabBtn);
+            });
+            var overlay = document.getElementById('ts-fabric-overlay');
+            if (overlay) {
+                overlay.classList.remove('is-cotton', 'is-polyester');
+                if (fabric === 'cotton') overlay.classList.add('is-cotton');
+                else if (fabric === 'polyester') overlay.classList.add('is-polyester');
+            }
+            return;
+        }
+
         // Apply params on demand
         if (e.target.closest('#ts-apply-btn')) {
             applyParams();
@@ -265,8 +281,10 @@
             applyZoom();
             var a = document.getElementById('ts-canvas-actions');
             var z = document.getElementById('ts-zoombar');
+            var f = document.getElementById('ts-fabricbar');
             if (a) a.hidden = false;
             if (z) z.hidden = false;
+            if (f) f.hidden = false;
         },
         onPreviewReady: function () { state.done = true; }
     };
