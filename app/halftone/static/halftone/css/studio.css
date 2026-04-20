@@ -630,29 +630,31 @@ input[type=range]::-moz-range-thumb {
     background-size: 3px 3px, 3px 3px, 6px 6px;
 }
 
-/* Fabric selector bar */
+/* Fabric / background simulator bar */
 .ts-fabricbar {
     position: absolute;
     left: 50%;
-    top: 25px;          /* just above the zoombar */
+    top: 25px;
     transform: translateX(-50%);
     display: flex;
+    flex-direction: row;
     align-items: center;
     gap: 4px;
     background: #fff;
     border: 1px solid var(--line);
     border-radius: 999px;
-    padding: 4px 10px;
+    padding: 5px 12px;
     box-shadow: var(--shadow);
     z-index: 5;
     white-space: nowrap;
 }
 .ts-fabricbar[hidden] { display: none; }
 .ts-fabricbar-label {
-    font-size: 11px;
-    font-weight: 600;
+    font-size: 10px;
+    font-weight: 700;
     color: var(--muted);
-    letter-spacing: .04em;
+    letter-spacing: .06em;
+    text-transform: uppercase;
     margin-right: 2px;
 }
 .ts-fab-btn {
@@ -668,6 +670,45 @@ input[type=range]::-moz-range-thumb {
 }
 .ts-fab-btn:hover { color: var(--ink); background: #f1f5f9; }
 .ts-fab-btn.is-on { background: var(--ink); color: #fff; }
+
+/* Garment color swatches */
+.ts-fab-swatch {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    flex-shrink: 0;
+    box-shadow: 0 0 0 1px rgba(0,0,0,.18);
+    transition: transform .1s, box-shadow .1s;
+    position: relative;
+}
+.ts-fab-swatch:hover { transform: scale(1.18); }
+.ts-fab-swatch.is-on {
+    box-shadow: 0 0 0 2.5px var(--ink);
+    transform: scale(1.1);
+}
+.ts-fab-swatch--custom {
+    background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red) !important;
+    overflow: hidden;
+}
+.ts-fab-swatch--custom input[type=color] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: none;
+}
+
+/* Halftone pane in garment-simulation mode — replaces the checker */
+.ts-compare-pane.ts-garment {
+    background-image: none !important;
+    background-color: var(--garment-color, #ffffff) !important;
+}
 
 /* Responsive tweaks so nothing breaks on smaller viewports */
 @media (max-width: 1100px) {

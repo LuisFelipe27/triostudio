@@ -6,7 +6,8 @@
      data-delete-url="{% url 'halftone:delete_job' job.pk %}"
      data-params-url="{% url 'halftone:update_params' job.pk %}"
      data-export-url="{% url 'halftone:export_job' job.pk %}"
-     data-status-url="{% url 'halftone:job_status' job.pk %}">
+     data-status-url="{% url 'halftone:job_status' job.pk %}"
+     data-bg-color="{{ job.bg_color|default:'#ffffff' }}">
 
     <div class="ts-compare">
         <div class="ts-compare-pane">

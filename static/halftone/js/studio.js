@@ -46,8 +46,19 @@
         }
     });
 
-    // Slider live labels
+    // Slider live labels + custom garment color picker
     document.addEventListener('input', function (e) {
+        if (e.target.id === 'ts-fab-custom-color') {
+            fabricState.active = true;
+            fabricState.color = e.target.value;
+            var customSwatch = e.target.closest('.ts-fab-swatch--custom');
+            document.querySelectorAll('.ts-fab-btn[data-fabric="none"]').forEach(function (b) { b.classList.remove('is-on'); });
+            document.querySelectorAll('.ts-fab-swatch').forEach(function (s) {
+                s.classList.toggle('is-on', s === customSwatch);
+            });
+            applyFabric();
+            return;
+        }
         if (e.target.matches('input[type=range]')) {
             var out = document.querySelector('output[data-for="' + e.target.id + '"]');
             if (out) {
@@ -172,20 +183,52 @@
         markDirty();
     }
 
+    // --------------- Fabric simulator ---------------
+    var fabricState = { active: false, color: 'job' };
+
+    function applyFabric() {
+        var halfPane = document.querySelector('.ts-compare-pane.ts-checker');
+        var stage    = document.getElementById('ts-stage');
+
+        if (!halfPane) return;
+
+        if (fabricState.active) {
+            var garmentColor = (fabricState.color === 'job')
+                ? ((stage && stage.dataset.bgColor) || '#ffffff')
+                : fabricState.color;
+            halfPane.style.setProperty('--garment-color', garmentColor);
+            halfPane.classList.add('ts-garment');
+        } else {
+            halfPane.classList.remove('ts-garment');
+            halfPane.style.removeProperty('--garment-color');
+        }
+    }
+
     document.addEventListener('click', function (e) {
-        // Fabric simulator toggle
-        var fabBtn = e.target.closest('.ts-fab-btn');
+        // "Sin fondo" toggle
+        var fabBtn = e.target.closest('.ts-fab-btn[data-fabric="none"]');
         if (fabBtn) {
-            var fabric = fabBtn.dataset.fabric;
-            document.querySelectorAll('.ts-fab-btn').forEach(function (b) {
-                b.classList.toggle('is-on', b === fabBtn);
+            fabricState.active = false;
+            fabBtn.classList.add('is-on');
+            document.querySelectorAll('.ts-fab-swatch').forEach(function (s) {
+                s.classList.remove('is-on');
             });
-            var overlay = document.getElementById('ts-fabric-overlay');
-            if (overlay) {
-                overlay.classList.remove('is-cotton', 'is-polyester');
-                if (fabric === 'cotton') overlay.classList.add('is-cotton');
-                else if (fabric === 'polyester') overlay.classList.add('is-polyester');
-            }
+            applyFabric();
+            return;
+        }
+
+        // Garment color swatch
+        var swatch = e.target.closest('.ts-fab-swatch');
+        if (swatch && !swatch.querySelector('input[type=color]')) {
+            fabricState.active = true;
+            fabricState.color = swatch.dataset.color;
+            document.querySelectorAll('.ts-fab-btn[data-fabric="none"]').forEach(function (b) {
+                b.classList.remove('is-on');
+            });
+            document.querySelectorAll('.ts-fab-swatch').forEach(function (s) {
+                s.classList.toggle('is-on', s === swatch);
+            });
+            applyFabric();
             return;
         }
 
@@ -278,13 +321,26 @@
         onStageReady: function () {
             state.zoom = 1.0;
             state.done = false;
+            fabricState.active = false;
+            fabricState.color = 'job';
             applyZoom();
             var a = document.getElementById('ts-canvas-actions');
             var z = document.getElementById('ts-zoombar');
             var f = document.getElementById('ts-fabricbar');
             if (a) a.hidden = false;
             if (z) z.hidden = false;
-            if (f) f.hidden = false;
+            if (f) {
+                f.hidden = false;
+                // Sync job-color swatch with bg_color of the job
+                var stage = document.getElementById('ts-stage');
+                var jobColor = (stage && stage.dataset.bgColor) || '#ffffff';
+                f.style.setProperty('--fab-job-color', jobColor);
+                var jobSwatch = f.querySelector('[data-color="job"]');
+                if (jobSwatch) jobSwatch.style.background = jobColor;
+                // Reset to "Sin fondo"
+                f.querySelectorAll('.ts-fab-btn[data-fabric="none"]').forEach(function (b) { b.classList.add('is-on'); });
+                f.querySelectorAll('.ts-fab-swatch').forEach(function (s) { s.classList.remove('is-on'); });
+            }
         },
         onPreviewReady: function () { state.done = true; }
     };
